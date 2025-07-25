@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestión de Modelos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-7xl mx-auto bg-white p-4 rounded shadow space-y-6">
+
+    <!-- Navegación -->
+    <div class="flex gap-2 mb-4">
+      <button onclick="cambiarPestana('modelos')" class="tab-btn bg-blue-600 text-white px-4 py-2 rounded">Modelos</button>
+      <button onclick="cambiarPestana('horario')" class="tab-btn bg-gray-300 px-4 py-2 rounded">Horario</button>
+      <button onclick="cambiarPestana('tokens')" class="tab-btn bg-gray-300 px-4 py-2 rounded">Tokens</button>
+      <button onclick="cambiarPestana('dashboard')" class="tab-btn bg-gray-300 px-4 py-2 rounded">Dashboard</button>
+    </div>
+
+    <!-- Pestaña Modelos -->
+    <div id="pestana-modelos" class="pestana">
+      <h2 class="text-xl font-bold">Modelos</h2>
+      <div class="flex flex-wrap gap-2 mt-2">
+        <input id="buscarModelo" oninput="filtrarModelos()" placeholder="🔍 Buscar por nombre" class="border p-2 rounded w-full sm:w-64" />
+        <input type="date" id="filtroFechaInicio" onchange="filtrarModelos()" class="border p-2 rounded"/>
+        <input type="date" id="filtroFechaFin" onchange="filtrarModelos()" class="border p-2 rounded"/>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <input id="nombreModelo" class="border p-2 rounded" placeholder="Nombre modelo" />
+        <input id="paginasModelo" class="border p-2 rounded" placeholder="Páginas que trabaja" />
+        <button onclick="agregarModelo()" class="bg-green-600 text-white px-4 py-2 rounded">Guardar</button>
+      </div>
+      <table class="w-full border mt-4 text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2 border">Nombre</th>
+            <th class="p-2 border">Páginas</th>
+            <th class="p-2 border">Horas</th>
+            <th class="p-2 border">Tokens</th>
+            <th class="p-2 border">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModelos"></tbody>
+      </table>
+    </div>
+
+    <!-- Pestaña Horario -->
+    <div id="pestana-horario" class="pestana hidden">
+      <h2 class="text-xl font-bold mb-2">Registro de Horarios</h2>
+      <div class="grid md:grid-cols-4 gap-2 mb-2">
+        <select id="nombreHorario" class="border p-2 rounded w-full"></select>
+        <input type="date" id="fechaHorario" class="border p-2 rounded"/>
+        <input type="time" id="horaEntrada" class="border p-2 rounded"/>
+        <input type="time" id="horaSalida" class="border p-2 rounded"/>
+        <input type="number" id="breakHorario" placeholder="Break (min)" class="border p-2 rounded"/>
+        <input type="text" id="comentarioHorario" placeholder="Comentario" class="border p-2 rounded"/>
+        <label><input type="checkbox" id="faltaHorario"/> Falta</label>
+        <button onclick="agregarHorario()" class="bg-green-600 text-white px-4 py-2 rounded">Agregar</button>
+      </div>
+      <table class="w-full border text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2 border">Fecha</th>
+            <th class="p-2 border">Nombre</th>
+            <th class="p-2 border">Entrada</th>
+            <th class="p-2 border">Salida</th>
+            <th class="p-2 border">Break</th>
+            <th class="p-2 border">Falta</th>
+            <th class="p-2 border">Comentario</th>
+            <th class="p-2 border">Horas</th>
+            <th class="p-2 border">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaHorarios"></tbody>
+      </table>
+    </div>
+
+    <!-- Pestaña Tokens -->
+    <div id="pestana-tokens" class="pestana hidden">
+      <h2 class="text-xl font-bold mb-2">Registro de Tokens</h2>
+      <div class="flex flex-wrap gap-2 mb-2">
+        <select id="nombreToken" class="border p-2 rounded w-full sm:w-64"></select>
+        <input type="date" id="fechaToken" class="border p-2 rounded"/>
+        <input type="number" id="cantidadToken" placeholder="Tokens" class="border p-2 rounded"/>
+        <button onclick="agregarToken()" class="bg-green-600 text-white px-4 py-2 rounded">Agregar</button>
+      </div>
+      <table class="w-full border text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2 border">Fecha</th>
+            <th class="p-2 border">Nombre</th>
+            <th class="p-2 border">Cantidad</th>
+            <th class="p-2 border">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaTokens"></tbody>
+      </table>
+    </div>
+
+    <!-- Pestaña Dashboard -->
+    <div id="pestana-dashboard" class="pestana hidden">
+      <h2 class="text-xl font-bold mb-4">Dashboard</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+        <select id="modeloDashboard" class="border p-2 rounded"></select>
+        <select id="rangoDashboard" class="border p-2 rounded">
+          <option value="quincenal">Quincenal</option>
+          <option value="mensual">Mensual</option>
+        </select>
+        <input type="date" id="desdeDashboard" class="border p-2 rounded"/>
+        <input type="date" id="hastaDashboard" class="border p-2 rounded"/>
+        <button onclick="actualizarDashboard()" class="bg-blue-600 text-white px-4 py-2 rounded">Actualizar</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <canvas id="graficaHoras"></canvas>
+          <p class="text-center font-semibold mt-1" id="totalHorasTexto"></p>
+        </div>
+        <div>
+          <canvas id="graficaTokens"></canvas>
+          <p class="text-center font-semibold mt-1" id="totalTokensTexto"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
