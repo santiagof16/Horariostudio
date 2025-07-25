@@ -1,11 +1,23 @@
-let modelos = JSON.parse(localStorage.getItem('modelos')) || [];
-let horarios = JSON.parse(localStorage.getItem('horarios')) || [];
-let tokens = JSON.parse(localStorage.getItem('tokens')) || [];
+// Inicializar Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyB8uoWVlXokP1G4gdAibdq_FBSNiYRxXUA",
+  authDomain: "horario-modelos.firebaseapp.com",
+  databaseURL: "https://horario-modelos-default-rtdb.firebaseio.com",
+  projectId: "horario-modelos",
+  storageBucket: "horario-modelos.appspot.com",
+  messagingSenderId: "699784269203",
+  appId: "1:699784269203:web:2a5b0693014a52416d2c66"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let modelos = [], horarios = [], tokens = [];
 
 function guardarDatos() {
-  localStorage.setItem('modelos', JSON.stringify(modelos));
-  localStorage.setItem('horarios', JSON.stringify(horarios));
-  localStorage.setItem('tokens', JSON.stringify(tokens));
+  db.ref("modelos").set(modelos);
+  db.ref("horarios").set(horarios);
+  db.ref("tokens").set(tokens);
   actualizarSelects();
 }
 
@@ -42,6 +54,23 @@ function eliminarModelo(nombre) {
   renderModelos();
 }
 
+function editarModeloPaginas(nombre, paginas) {
+  const m = modelos.find(m => m.nombre === nombre);
+  if (m) m.paginas = paginas;
+  guardarDatos();
+}
+
+function editarModeloNombre(nombreAnterior, nuevoNombre) {
+  const modelo = modelos.find(m => m.nombre === nombreAnterior);
+  if (modelo) modelo.nombre = nuevoNombre;
+
+  horarios.forEach(h => { if (h.nombre === nombreAnterior) h.nombre = nuevoNombre });
+  tokens.forEach(t => { if (t.nombre === nombreAnterior) t.nombre = nuevoNombre });
+
+  guardarDatos();
+  renderModelos();
+}
+
 function renderModelos() {
   const tbody = document.getElementById('tablaModelos');
   tbody.innerHTML = '';
@@ -73,23 +102,6 @@ function renderModelos() {
     `;
     tbody.appendChild(tr);
   });
-}
-
-function editarModeloPaginas(nombre, paginas) {
-  const m = modelos.find(m => m.nombre === nombre);
-  if (m) m.paginas = paginas;
-  guardarDatos();
-}
-
-function editarModeloNombre(nombreAnterior, nuevoNombre) {
-  const modelo = modelos.find(m => m.nombre === nombreAnterior);
-  if (modelo) modelo.nombre = nuevoNombre;
-
-  horarios.forEach(h => { if (h.nombre === nombreAnterior) h.nombre = nuevoNombre });
-  tokens.forEach(t => { if (t.nombre === nombreAnterior) t.nombre = nuevoNombre });
-
-  guardarDatos();
-  renderModelos();
 }
 
 function actualizarSelects() {
@@ -188,7 +200,6 @@ function eliminarToken(i) {
 
 function actualizarDashboard() {
   const nombre = document.getElementById('modeloDashboard').value;
-  const rango = document.getElementById('rangoDashboard').value;
   const desde = document.getElementById('desdeDashboard').value;
   const hasta = document.getElementById('hastaDashboard').value;
 
@@ -249,10 +260,16 @@ function filtrarModelos() {
   renderModelos();
 }
 
+// Carga inicial desde Firebase
 window.onload = () => {
-  guardarDatos();
-  renderModelos();
-  renderHorarios();
-  renderTokens();
-  actualizarDashboard();
+  db.ref().once('value').then(snapshot => {
+    modelos = snapshot.val().modelos || [];
+    horarios = snapshot.val().horarios || [];
+    tokens = snapshot.val().tokens || [];
+    renderModelos();
+    renderHorarios();
+    renderTokens();
+    actualizarDashboard();
+    actualizarSelects();
+  });
 };
